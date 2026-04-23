@@ -3,13 +3,13 @@ name: Cross-Platform Build and Release
 on:
   push:
     tags:
-      - "v*" # Triggers only when you push a tag like v1.0.0
+      - "v*"
 
 permissions:
-  contents: write # Essential for creating releases automatically
+  contents: write
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Prevents Node 20 deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -38,11 +38,11 @@ jobs:
 
       - name: Compile C Source (Linux/macOS)
         if: matrix.os != 'windows-latest'
-        run: ${{ matrix.compiler }} -O3 *.c -o build/${{ matrix.artifact_name }}
+        run: ${{ matrix.compiler }} -O3 src/*.c -I include -o build/${{ matrix.artifact_name }}
 
       - name: Compile C Source (Windows)
         if: matrix.os == 'windows-latest'
-        run: ${{ matrix.compiler }} -O3 *.c -o build/${{ matrix.artifact_name }}
+        run: ${{ matrix.compiler }} -O3 src/*.c -I include -o build/${{ matrix.artifact_name }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
