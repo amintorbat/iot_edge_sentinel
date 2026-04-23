@@ -3,10 +3,13 @@ name: Cross-Platform Build and Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*" # Triggers only when you push a tag like v1.0.0
 
 permissions:
-  contents: write
+  contents: write # Essential for creating releases automatically
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Prevents Node 20 deprecation warnings
 
 jobs:
   build:
@@ -17,33 +20,29 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: iot_edge_sentinel_linux_x86_64
+            artifact_name: iot_edge_sentinel_linux_x64
             compiler: gcc
-            ext: ""
-          - os: windows-latest
-            artifact_name: iot_edge_sentinel_windows_x86_64.exe
-            compiler: gcc
-            ext: ".exe"
           - os: macos-latest
-            artifact_name: iot_edge_sentinel_macos_x86_64
+            artifact_name: iot_edge_sentinel_macos_x64
             compiler: clang
-            ext: ""
+          - os: windows-latest
+            artifact_name: iot_edge_sentinel_windows_x64.exe
+            compiler: gcc
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Compile C Code (Linux/macOS)
-        if: matrix.os != 'windows-latest'
-        run: |
-          mkdir -p build
-          ${{ matrix.compiler }} -O3 src/*.c -o build/${{ matrix.artifact_name }}
+      - name: Create Build Directory
+        run: mkdir build
 
-      - name: Compile C Code (Windows)
+      - name: Compile C Source (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: ${{ matrix.compiler }} -O3 *.c -o build/${{ matrix.artifact_name }}
+
+      - name: Compile C Source (Windows)
         if: matrix.os == 'windows-latest'
-        run: |
-          mkdir build
-          gcc -O3 src/*.c -o build/${{ matrix.artifact_name }}
+        run: ${{ matrix.compiler }} -O3 *.c -o build/${{ matrix.artifact_name }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -56,14 +55,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: true
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
+          files: artifacts/*
