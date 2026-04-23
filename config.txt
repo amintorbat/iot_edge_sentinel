@@ -1,2 +1,3 @@
 MAX_TEMP 75.0
 MAX_CPU 85.0
+DATA_PATH sensor_data.csv
